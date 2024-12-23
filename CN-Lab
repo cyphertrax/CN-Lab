@@ -1,0 +1,530 @@
+1 . Character stuffing 
+
+def character_stuffing(data):
+    stuffed_data = "DLESTX"
+    i = 0
+    while i < len(data):
+        if data[i:i+3] == "DLE":
+            stuffed_data += "DLE"
+        stuffed_data += data[i]
+        i += 1
+    stuffed_data += "DLEETX"
+    return stuffed_data
+
+def character_destuffing(stuffed_data):
+    if not stuffed_data.startswith("DLESTX") or not stuffed_data.endswith("DLEETX"):
+        raise ValueError("Invalid stuffed data format")
+    data = ""
+    i = 6  # Skip "DLESTX"
+    while i < len(stuffed_data) - 6:  # Ignore "DLEETX" at the end
+        if stuffed_data[i:i+3] == "DLE":
+            data += "DLE"
+            i += 3  # Skip the duplicate "DLE"
+        else:
+            data += stuffed_data[i]
+        i += 1
+    return data
+
+def main():
+    data = input("Enter string: ")
+    stuffed = character_stuffing(data)
+    print(f"Stuffed Data: {stuffed}")
+    destuffed = character_destuffing(stuffed)
+    print(f"Destuffed Data: {destuffed}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+-------------------1B--------------------
+def bit_stuffing(data):
+    stuffed = ""
+    count = 0
+    for bit in data:
+        stuffed += bit
+        if bit == '1':
+            count += 1
+            if count == 5:
+                stuffed += '0'  # Insert '0' after five consecutive '1's
+                count = 0
+        else:
+            count = 0
+    return stuffed
+
+def bit_destuffing(stuffed_data):
+    destuffed = ""
+    count = 0
+    i = 0
+    while i < len(stuffed_data):
+        bit = stuffed_data[i]
+        destuffed += bit
+        if bit == '1':
+            count += 1
+            if count == 5:
+                i += 1  # Skip the stuffed '0'
+                count = 0
+        else:
+            count = 0
+        i += 1
+    return destuffed
+
+def main():
+    data = "1011111101"  # Example bit stream
+    stuffed_data = bit_stuffing(data)
+    print(f"Stuffed Data: {stuffed_data}")
+    destuffed_data = bit_destuffing(stuffed_data)
+    print(f"Destuffed Data: {destuffed_data}")
+
+if __name__ == "__main__":
+    main()
+
+
+--------------------- 2.Write a program to compute CRC code for the polynomials CRC12, CRC16 and CRC,
+ CCIP------------------------------
+
+def crc12(data):
+    crc = 0
+    poly = 0x180F  # CRC-12 polynomial
+    for byte in data.encode():
+        crc ^= (byte << 4)
+        for _ in range(8):
+            if crc & 0x800:
+                crc = (crc << 1) ^ poly
+            else:
+                crc <<= 1
+    return crc & 0xFFF  # 12-bit CRC
+
+def crc16(data):
+    crc = 0
+    poly = 0x8005  # CRC-16 polynomial
+    for byte in data.encode():
+        crc ^= (byte << 8)
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ poly
+            else:
+                crc <<= 1
+    return crc & 0xFFFF  # 16-bit CRC
+
+def crc_ccip(data):
+    crc = 0
+    poly = 0x1021  # CRC-CCIP polynomial
+    for byte in data.encode():
+        crc ^= (byte << 8)
+        for _ in range(8):
+            if crc & 0x8000:
+                crc = (crc << 1) ^ poly
+            else:
+                crc <<= 1
+    return crc & 0xFFFF  # 16-bit CRC
+
+def main():
+    data = "123456789"  # Example data
+    print(f"CRC-12: {crc12(data):X}")
+    print(f"CRC-16: {crc16(data):X}")
+    print(f"CRC-CCIP: {crc_ccip(data):X}")
+
+if __name__ == "__main__":
+    main()
+
+
+-----------------------------3. Develop a simple data link layer that performs the flow control using the sliding window
+ protocol, and loss recovery using the Go-Back-N mechanism.----------------------------
+
+import random
+
+def sliding_window_protocol(window_size, frames):
+    total_frames = len(frames)
+    sent = 0  # Pointer to track the next frame to send
+    acknowledged = [False] * total_frames  # Track acknowledgments
+
+    print("\nWith sliding window protocol and Go-Back-N ARQ, the frames will be sent:\n")
+
+    while sent < total_frames:
+        # Send frames within the current window
+        for i in range(sent, min(sent + window_size, total_frames)):
+            print(f"Sending frame {frames[i]}")
+
+        # Check acknowledgments
+        for i in range(sent, min(sent + window_size, total_frames)):
+            if random.randint(0, 1):  # Randomly decide if ACK is received
+                print(f"Acknowledgment received for frame {frames[i]}")
+                acknowledged[i] = True
+            else:
+                print(f"Acknowledgment lost for frame {frames[i]}")
+                break  # Go-Back-N: Stop and resend from this frame
+
+        # Update the sent pointer to the next unacknowledged frame
+        while sent < total_frames and acknowledged[sent]:
+            sent += 1
+
+    print("\nAll frames sent and acknowledged.")
+
+def main():
+    # Input the window size and frames
+    window_size = int(input("Enter window size: "))
+    total_frames = int(input("\nEnter number of frames to transmit: "))
+    frames = [int(input(f"Enter frame {i + 1}: ")) for i in range(total_frames)]
+
+    # Run the sliding window protocol
+    sliding_window_protocol(window_size, frames)
+
+if __name__ == "__main__":
+    main()
+
+
+_----------------------------------4. Implement Dijsktra‘s algorithm to compute the shortest path through a network----------------------------
+
+import sys
+
+def find_min(dist, spt_set):
+    """Find the vertex with the minimum distance value, from the set of vertices not yet processed."""
+    min_val = sys.maxsize
+    min_index = -1
+    for v in range(len(dist)):
+        if not spt_set[v] and dist[v] < min_val:
+            min_val = dist[v]
+            min_index = v
+    return min_index
+
+def print_solution(dist):
+    """Print the computed shortest distances from the source vertex."""
+    print("Vertex \t Distance from Source")
+    for i in range(len(dist)):
+        print(f"{i} \t\t {dist[i]}")
+
+def dijkstra(graph, src):
+    """Implement Dijkstra's algorithm."""
+    V = len(graph)
+    dist = [sys.maxsize] * V  # Distance from source to each vertex
+    spt_set = [False] * V  # Shortest path tree set
+
+    dist[src] = 0  # Distance from source to itself is always 0
+
+    for _ in range(V):
+        u = find_min(dist, spt_set)
+        spt_set[u] = True
+
+        for v in range(V):
+            if not spt_set[v] and graph[u][v] and dist[u] + graph[u][v] < dist[v]:
+                dist[v] = dist[u] + graph[u][v]
+
+    print_solution(dist)
+
+def main():
+    graph = [
+        [0, 4, 0, 0, 0, 0, 0, 8, 0],
+        [4, 0, 8, 0, 0, 0, 0, 11, 0],
+        [0, 8, 0, 7, 0, 4, 0, 0, 2],
+        [0, 0, 7, 0, 9, 14, 0, 0, 0],
+        [0, 0, 0, 9, 0, 10, 0, 0, 0],
+        [0, 0, 4, 14, 10, 0, 2, 0, 0],
+        [0, 0, 0, 0, 0, 2, 0, 1, 6],
+        [8, 11, 0, 0, 0, 0, 1, 0, 7],
+        [0, 0, 2, 0, 0, 0, 6, 7, 0]
+    ]
+
+    dijkstra(graph, 0)
+
+if __name__ == "__main__":
+    main()
+
+
+------------------------------ 5.Take an example subnet of hosts and obtain a broadcast tree for the subnet. -------------------------
+
+
+def broadcast_tree(adj_matrix, root):
+    """Function to compute and display the broadcast tree starting from the root."""
+    n = len(adj_matrix) - 1  # Number of nodes
+    visited = [False] * (n + 1)
+    queue = []
+
+    print(f"Broadcast Tree starting from node {root}:")
+    queue.append(root)
+    visited[root] = True
+
+    while queue:
+        current = queue.pop(0)
+        print(current, end=" ")
+        for i in range(1, n + 1):
+            if adj_matrix[current][i] == 1 and not visited[i]:
+                queue.append(i)
+                visited[i] = True
+    print()
+
+def main():
+    n = int(input("Enter number of nodes: "))
+    adj_matrix = [[0] * (n + 1) for _ in range(n + 1)]
+
+    print("Enter adjacency matrix:")
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            adj_matrix[i][j] = int(input(f"Enter connection of {i} -> {j} (1 for connected, 0 for not connected): "))
+
+    root = int(input("Enter root node: "))
+    broadcast_tree(adj_matrix, root)
+
+if __name__ == "__main__":
+    main()
+
+
+
+Enter number of nodes: 4
+Enter adjacency matrix:
+Enter connection of 1 -> 1: 0
+Enter connection of 1 -> 2: 1
+Enter connection of 1 -> 3: 1
+Enter connection of 1 -> 4: 0
+Enter connection of 2 -> 1: 1
+Enter connection of 2 -> 2: 0
+Enter connection of 2 -> 3: 0
+Enter connection of 2 -> 4: 1
+Enter connection of 3 -> 1: 1
+Enter connection of 3 -> 2: 0
+Enter connection of 3 -> 3: 0
+Enter connection of 3 -> 4: 1
+Enter connection of 4 -> 1: 0
+
+
+
+
+--------------------------6 . Implement distance vector routing algorithm for obtaining routing tables at each node------------------------------------
+
+def distance_vector_routing(n, adj):
+    """Implements the Distance Vector Routing algorithm."""
+    # Initialize routing tables
+    rt = [{"dist": [float('inf')] * n, "from": list(range(n))} for _ in range(n)]
+
+    # Initialize distances from adjacency matrix
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                adj[i][j] = 0
+            rt[i]["dist"][j] = adj[i][j]
+
+    # Update routing tables until no changes occur
+    updated = True
+    while updated:
+        updated = False
+        for i in range(n):
+            for j in range(n):
+                for k in range(n):
+                    if rt[i]["dist"][j] > adj[i][k] + rt[k]["dist"][j]:
+                        rt[i]["dist"][j] = adj[i][k] + rt[k]["dist"][j]
+                        rt[i]["from"][j] = k
+                        updated = True
+
+    # Print the routing tables
+    for i in range(n):
+        print(f"\nRouting table for router {i + 1}:")
+        for j in range(n):
+            print(f"Node {j + 1} via {rt[i]['from'][j] + 1}, Distance {rt[i]['dist'][j]}")
+
+def main():
+    # Input number of vertices
+    n = int(input("Enter the number of vertices: "))
+    
+    # Input adjacency matrix
+    print("Enter the cost matrix:")
+    adj = []
+    for i in range(n):
+        adj.append(list(map(int, input().split())))
+
+    # Call the Distance Vector Routing algorithm
+    distance_vector_routing(n, adj)
+
+if __name__ == "__main__":
+    main()
+
+
+input ------------
+Enter the number of vertices: 3
+Enter the cost matrix:
+0 2 7
+2 0 1
+7 1 0
+
+
+output --------
+
+Routing table for router 1:
+Node 1 via 1, Distance 0
+Node 2 via 2, Distance 2
+Node 3 via 2, Distance 3
+
+Routing table for router 2:
+Node 1 via 1, Distance 2
+Node 2 via 2, Distance 0
+Node 3 via 3, Distance 1
+
+Routing table for router 3:
+Node 1 via 2, Distance 3
+Node 2 via 2, Distance 1
+Node 3 via 3, Distance 0
+
+
+_-------------------------------------------------7.  Implement data encryption and data decryption.---------------------------
+
+# Function to encrypt the message
+def encrypt(message, key):
+    encrypted_message = []
+    for char in message:
+        if 'a' <= char <= 'z':  # Encrypt lowercase letters
+            char = chr((ord(char) + key - ord('a')) % 26 + ord('a'))
+        elif 'A' <= char <= 'Z':  # Encrypt uppercase letters
+            char = chr((ord(char) + key - ord('A')) % 26 + ord('A'))
+        encrypted_message.append(char)
+    return ''.join(encrypted_message)
+
+# Function to decrypt the message
+def decrypt(message, key):
+    decrypted_message = []
+    for char in message:
+        if 'a' <= char <= 'z':  # Decrypt lowercase letters
+            char = chr((ord(char) - key - ord('a')) % 26 + ord('a'))
+        elif 'A' <= char <= 'Z':  # Decrypt uppercase letters
+            char = chr((ord(char) - key - ord('A')) % 26 + ord('A'))
+        decrypted_message.append(char)
+    return ''.join(decrypted_message)
+
+# Main function
+def main():
+    message = input("Enter a message: ")
+    key = int(input("Enter key: "))
+
+    print("Choose an option:\n1. Encrypt\n2. Decrypt")
+    choice = int(input())
+
+    if choice == 1:
+        encrypted_message = encrypt(message, key)
+        print(f"Encrypted message: {encrypted_message}")
+    elif choice == 2:
+        decrypted_message = decrypt(message, key)
+        print(f"Decrypted message: {decrypted_message}")
+    else:
+        print("Invalid choice")
+
+if __name__ == "__main__":
+    main()
+
+
+------------input 
+Enter a message: Hello World
+Enter key: 3
+Choose an option:
+1. Encrypt
+2. Decrypt
+-------------output 
+Decrypted message: Hello World
+
+
+
+-------------------------------8 Write a program for congestion control using Leaky bucket algorithm-----------
+
+
+def leaky_bucket():
+    # Get user inputs
+    bucket_size = int(input("Enter the bucket size: "))
+    output_rate = int(input("Enter the output rate: "))
+    num_packets = int(input("Enter the number of packets: "))
+    
+    current_content = 0  # Current content of the bucket
+
+    # Process each packet
+    for i in range(num_packets):
+        packet_size = int(input(f"Enter the size of packet {i + 1}: "))
+        
+        # Check if the packet can be added to the bucket
+        if packet_size <= (bucket_size - current_content):
+            current_content += packet_size
+            print(f"Packet {i + 1} added to the bucket. Current bucket content: {current_content} bytes")
+        else:
+            print(f"Packet {i + 1} discarded. Bucket overflow.")
+        
+        # Simulate the output process (leaky bucket)
+        current_content -= output_rate
+        if current_content < 0:
+            current_content = 0
+        print(f"After output, bucket content: {current_content} bytes")
+    
+    # Empty the remaining content in the bucket after all packets are processed
+    while current_content > 0:
+        current_content -= output_rate
+        if current_content < 0:
+            current_content = 0
+        print(f"After output, bucket content: {current_content} bytes")
+
+# Call the function to simulate the leaky bucket
+leaky_bucket()
+
+
+-----------input 
+Enter the bucket size: 10
+Enter the output rate: 2
+Enter the number of packets: 5
+Enter the size of packet 1: 4
+Enter the size of packet 2: 5
+Enter the size of packet 3: 3
+Enter the size of packet 4: 7
+Enter the size of packet 5: 2
+----------output 
+Packet 1 added to the bucket. Current bucket content: 4 bytes
+After output, bucket content: 2 bytes
+Packet 2 added to the bucket. Current bucket content: 7 bytes
+After output, bucket content: 5 bytes
+Packet 3 added to the bucket. Current bucket content: 8 bytes
+After output, bucket content: 6 bytes
+Packet 4 discarded. Bucket overflow.
+After output, bucket content: 4 bytes
+
+
+
+
+------------------------ 9 .Write a program for frame sorting technique used in buffers---------------
+
+def frame_sorting():
+    n = int(input("Enter number of frames: "))
+    fnum = []
+    finfo = []
+
+    # Input frame sequence numbers and their content
+    for i in range(n):
+        seq_num = int(input(f"Enter sequence number for frame {i + 1}: "))
+        frame_info = input(f"Enter the frame contents for sequence number {seq_num}: ")
+        fnum.append(seq_num)
+        finfo.append(frame_info)
+
+    # Sort the frames by sequence number
+    for i in range(n):
+        for j in range(i + 1, n):
+            if fnum[j] < fnum[i]:
+                fnum[i], fnum[j] = fnum[j], fnum[i]
+                finfo[i], finfo[j] = finfo[j], finfo[i]
+
+    # Print the sorted frames
+    print("\nThe frames in sequence are:")
+    for i in range(n):
+        print(f"{fnum[i]}\t{finfo[i]}")
+
+# Call the function
+frame_sorting()
+
+
+----------input 
+nter number of frames: 3
+Enter sequence number for frame 1: 2
+Enter the frame contents for sequence number 2: Frame 2 content
+Enter sequence number for frame 2: 1
+Enter the frame contents for sequence number 1: Frame 1 content
+
+---------output 
+The frames in sequence are:
+1    Frame 1 content
+2    Frame 2 content
+3    Frame 3 content
+
+
+
+
+
